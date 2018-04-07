@@ -1,0 +1,145 @@
+Downloading, installing, and building Leptonica and Tesseract
+
+first you need to find out the version of Ubuntu that you/ODROId is running: 
+odroid@odroid:~/tesseract/leptonica-1.74.4/build$ lsb_release -a
+No LSB modules are available.
+Distributor ID: Ubuntu
+Description:    Ubuntu 16.04.4 LTS
+Release:    16.04
+Codename:   xenial
+
+Now you know that you are running: Ubuntu 16.04.4 LTS xenial
+
+sudo apt-get install g++ 
+sudo apt-get install autoconf automake libtool
+sudo apt-get install autoconf-archive
+sudo apt-get install pkg-config
+sudo apt-get install libpng-dev
+sudo apt-get install libjpeg8-dev
+sudo apt-get install libtiff5-dev
+sudo apt-get install zlib1g-dev
+sudo apt-get install xzgv
+
+#in order to install the training tools you need these libraries:
+sudo apt-get install libicu-dev
+sudo apt-get install libpango1.0-dev
+sudo apt-get install libcairo2-dev
+
+http://www.leptonica.org/
+wget http://www.leptonica.org/source/leptonica-1.74.4.tar.gz
+mkdir tesseract
+mv leptonica-1.7.4.tar ./tesseract
+cd tesseract
+gunzip leptonica-1.74.4.tar.gz
+tar -xvf leptonica-1.74.4.tar.gz
+mkdir build
+cd build
+../configure
+make
+sudo make install
+make -j4 check
+
+cd tesseract/
+wget https://github.com/tesseract-ocr/tesseract/archive/4.0.0-beta.1.tar.gz
+gunzip 4.0.0-beta.1.tar.gz 
+tar -xvf 4.0.0-beta.1.tar 
+rm 4.0.0-beta.1.tar 
+cd tesseract-4.0.0-beta.1/
+
+./autogen.sh
+LIBLEPT_HEADERSDIR=/usr/local/include/leptonica ./configure --prefix=/usr/local/ --with-extra-libraries=/usr/local/lib
+make
+sudo make install
+sudo ldconfig
+make training
+sudo make training-install
+wget https://github.com/tesseract-ocr/tessdata/raw/4.00/eng.traineddata
+mv eng.traineddata ./tessdata/
+cd tessdata/
+export TESSDATA_PREFIX=/home/odroid/tesseract/tesseract-4.0.0-beta.1/tessdata/
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Things that you need:
+  --Text Box Editor
+  --Images with text on it to train
+
+
+
+==Getting a Text Box Editor==
+
+REQUIREMENTS
+============
+* QT4 (tested with QT-4.7.3, QT-4.8.2)
+* leptonica library
+* tesseract 3.01 or 3.02 build as library
+Obs.: In case you're compiling it with QT5 >= then you must to install libqt5svg5-dev/libqt5svg5-devel
+
+BUILDING
+========
+
+adjust location of leptonica and tesseract in qt-box-editor.pro
+qmake
+make
+
+BUILDING ON UBUNTU
+==================
+
+sudo apt-get install qt5-qmake
+sudo apt-get install qt5-default
+sudo apt-get install libqt5gui5
+sudo apt-get install qt5-doc
+sudo apt-get install libqt5svg5-dev
+sudo apt-get install libleptonica-dev
+
+qmake -qt=5
+make
+
+Bug in Box Editor
+Current Behavior:
+
+Tesseract header files since commit da03e4e added the use of string in the unichar.h header file that is used during compilation by tesserocr. This causes the compilation of tesserocr to throw an error because the std library is not imported.
+
+In file included from tesserocr.cpp:484:0:
+/usr/local/include/tesseract/unichar.h:164:10: error: ‘string’ does not name a type
+static string UTF32ToUTF8(const std::vector<char32>& str32);
+          ^
+
+Changing static string UTF32ToUTF8(const std::vector<char32>& str32); to static std::string UTF32ToUTF8(const std::vector<char32>& str32); in /usr/local/include/tesseract/unichar.h:164 fixes the problem for me.
+
+I am aware that you do not provide support for product that aren't the command-line Tesseract but I thought you might want to know since it worked before the commit.
+
+There may appear a bug during the compilation process, just go here on how to fix it, if you encounter it:
+https://github.com/zdenop/qt-box-editor/issues/61
+
+--another issue that you may encounter is that you need to change the CPP flags in your makefile for your compiler to work.
+-std=c11 or  -std=c++11
+-namespaces with std::string
+
+
+The input files must be named accordingly to the Tesseract convention:
+[language name].[font name].exp[number].[file extension]
+
+eng.ocrb.exp0.png
+eng.ocrb.exp1.png
+eng.ocrb.exp2.png
+
+create the box files
+run box_script.sh
+
+
+Use conversion_script.sh
+
+Remove old files
+rm pol.pffmtable pol.shapetable pol.traineddata pol.unicharset unicharset font_properties pol.inttemp pol.normproto *.tr *.txt
+
+Use train_script.sh
+
+Then we are going to extract the charset from the box files (the command creates a “unicharset” file).
+unicharset_extractor `wrap $N "eng.ocrb.exp" ".box"`
+
+Next we need to create a font_properties file.
+echo "ocrb 0 0 1 0 0" > font_properties # tell Tesseract informations about the font
+
+mftraining -F font_properties -U unicharset -O eng.unicharset `wrap $N "eng.ocrb.exp" ".tr"`
+cntraining `wrap $N "eng.ocrb.exp" ".tr"`
