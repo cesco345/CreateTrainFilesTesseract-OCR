@@ -68,6 +68,10 @@ Things that you need:
 
 ==Getting a Text Box Editor==
 
+http://zdenop.github.io/qt-box-editor/
+https://github.com/zdenop/qt-box-editor/tarball/master
+
+
 REQUIREMENTS
 ============
 * QT4 (tested with QT-4.7.3, QT-4.8.2)
@@ -126,6 +130,12 @@ eng.ocrb.exp2.png
 
 create the box files
 run box_script.sh
+
+Now you are ready to run your text box editor
+./qt-box-editor-1.13dev
+
+Check to see how it does, and help the box-editor to find the right characters.
+
 
 
 Use conversion_script.sh
