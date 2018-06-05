@@ -47,6 +47,7 @@ rm 4.0.0-beta.1.tar
 cd tesseract-4.0.0-beta.1/
 
 ./autogen.sh
+./configure
 LIBLEPT_HEADERSDIR=/usr/local/include/leptonica ./configure --prefix=/usr/local/ --with-extra-libraries=/usr/local/lib
 make
 sudo make install
